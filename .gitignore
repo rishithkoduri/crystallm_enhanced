@@ -1,0 +1,19 @@
+# Node dependencies
+node_modules/
+
+# Secrets
+.env
+
+# Python/ML caches and logs
+__pycache__/
+wandb/
+.gradio/
+
+# Large model files and checkpoints
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/

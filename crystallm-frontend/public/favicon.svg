@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="facet1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fca5a5"/>
+    </linearGradient>
+    
+    <linearGradient id="facet2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    
+    <linearGradient id="facet3" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#991b1b"/>
+      <stop offset="100%" stop-color="#450a0a"/>
+    </linearGradient>
+    
+    <linearGradient id="facet4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    
+    <linearGradient id="facet5" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#450a0a"/>
+    </linearGradient>
+    
+    <linearGradient id="facet6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(0, 2) scale(0.96)"> 
+    
+    <polygon points="50,5 15,45 50,30" fill="url(#facet1)" />
+    <polygon points="50,5 85,45 50,30" fill="url(#facet2)" />
+    
+    <polygon points="15,45 50,65 50,30" fill="url(#facet3)" />
+    <polygon points="85,45 50,65 50,30" fill="url(#facet4)" />
+    
+    <polygon points="15,45 50,95 50,65" fill="url(#facet5)" />
+    <polygon points="85,45 50,95 50,65" fill="url(#facet6)" />
+
+    <polygon points="50,5 15,45 50,95 85,45" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.8" stroke-linejoin="round"/>
+    
+    <line x1="50" y1="5" x2="50" y2="30" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.9" />
+    <line x1="15" y1="45" x2="50" y2="30" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.9" />
+    <line x1="85" y1="45" x2="50" y2="30" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" />
+    
+    <line x1="50" y1="65" x2="50" y2="95" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.2" />
+    <line x1="15" y1="45" x2="50" y2="65" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4" />
+    <line x1="85" y1="45" x2="50" y2="65" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.2" />
+    
+    <line x1="50" y1="30" x2="50" y2="65" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.6" />
+  </g>
+</svg>
