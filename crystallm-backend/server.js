@@ -26,6 +26,13 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Successfully connected to MongoDB Atlas!'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
+  mongoose.connection.on('disconnected', () => {
+    console.error('❌ MongoDB disconnected! Check your network or Atlas whitelist.');
+});
+
+mongoose.connection.on('reconnected', () => {
+    console.log('✅ MongoDB reconnected successfully!');
+});
 
 // ==========================================
 // 1. AUTHENTICATION ROUTES
@@ -53,7 +60,6 @@ app.post('/api/auth/register', async (req, res) => {
     console.log("✅ User saved to MongoDB perfectly!");
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    // Returning profilePic
     res.status(201).json({ status: 'success', token, user: { id: user._id, name: user.name, role: user.role, profilePic: user.profilePic } });
   } catch (error) {
     console.error("❌ Registration CRASH:", error);
@@ -80,7 +86,6 @@ app.post('/api/auth/login', async (req, res) => {
 
     console.log("✅ Login successful!");
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    // Returning profilePic
     res.status(200).json({ status: 'success', token, user: { id: user._id, name: user.name, role: user.role, profilePic: user.profilePic } });
   } catch (error) {
     console.error("❌ Login CRASH:", error);
@@ -102,13 +107,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'No clearance found for that email.' });
     }
 
-    // SECURITY CHECK: Verify DOB matches the one in the database
     if (user.dob !== dob) {
       console.log("❌ Error: DOB verification failed");
       return res.status(400).json({ status: 'error', message: 'Date of Birth verification failed.' });
     }
 
-    // If it matches, securely hash and save the new password
     user.password = newPassword;
     await user.save();
 
@@ -120,11 +123,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// NEW: Upload Profile Picture
 app.post('/api/auth/profile-pic', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    user.profilePic = req.body.profilePic; // Saving Base64 string directly
+    user.profilePic = req.body.profilePic; 
     await user.save();
     console.log("✅ Profile picture updated!");
     res.status(200).json({ status: 'success', profilePic: user.profilePic });
@@ -134,11 +136,10 @@ app.post('/api/auth/profile-pic', protect, async (req, res) => {
   }
 });
 
-// NEW: Delete Entire Account
 app.delete('/api/auth/delete-account', protect, async (req, res) => {
   try {
-    await Generation.deleteMany({ userId: req.user.id }); // Wipe their history
-    await User.findByIdAndDelete(req.user.id);            // Wipe their user account
+    await Generation.deleteMany({ userId: req.user.id }); 
+    await User.findByIdAndDelete(req.user.id);            
     console.log("🚨 User account permanently deleted.");
     res.status(200).json({ status: 'success', message: 'Account permanently deleted.' });
   } catch (error) { 
@@ -154,21 +155,22 @@ app.delete('/api/auth/delete-account', protect, async (req, res) => {
 
 app.post('/api/generate', protect, async (req, res) => {
     try {
-        const { formula, targetEnergy, spaceGroup } = req.body;
+        // Updated to extract z
+        const { formula, targetEnergy, spaceGroup, z } = req.body;
         
         console.log(`➡️ Requesting RTX 4060 GPU generation for: ${formula}`);
 
-        // 🚨 Pointing directly to your local Python FastAPI server
         const PYTHON_API_URL = "http://127.0.0.1:8000";
 
-        // 1. Call the Python Engine's /predict endpoint
+        // Call Python Engine with new Z param
         const pythonResponse = await fetch(`${PYTHON_API_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 formula: formula || "", 
                 targetEnergy: targetEnergy || "", 
-                spaceGroup: spaceGroup || "" 
+                spaceGroup: spaceGroup || "",
+                z: z || "" // Send Z
             })
         });
 
@@ -180,19 +182,19 @@ app.post('/api/generate', protect, async (req, res) => {
         const generatedPrompt = modelData.prompt;
         const finalEnergy = modelData.energy;
 
-        // 2. Save the successful generation to MongoDB History
+        // Save to DB including Z
         const newGeneration = new Generation({
             userId: req.user.id, 
             formula, 
             targetEnergy: finalEnergy,
             spaceGroup, 
+            z, // Save Z
             cifData: cifData
         });
         await newGeneration.save();
         
         console.log("✅ Generation successful and saved to MongoDB!");
 
-        // 3. Send the CIF back to React
         res.status(200).json({ status: "success", data: newGeneration, cifData: cifData, prompt: generatedPrompt });
 
     } catch (error) {
@@ -210,7 +212,6 @@ app.get('/api/history', protect, async (req, res) => {
   }
 });
 
-// NEW: Delete ALL History (CRITICAL: Must be placed BEFORE /api/history/:id)
 app.delete('/api/history/all', protect, async (req, res) => {
   try {
     await Generation.deleteMany({ userId: req.user.id });

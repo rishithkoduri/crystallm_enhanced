@@ -6,6 +6,7 @@ const generationSchema = new mongoose.Schema({
   formula: String,
   targetEnergy: String,
   spaceGroup: String,
+  z: String, // NEW FIELD
   cifData: String,
 }, { timestamps: true });
 

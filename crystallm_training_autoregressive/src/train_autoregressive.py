@@ -35,7 +35,6 @@ def train_crystallm():
         output_dir="data/models/crystallm-ar",
         overwrite_output_dir=True,
         
-        # 🚨 THE GOLDEN ZONE TARGET 🚨
         max_steps=17000,                   # Stop right before overfitting starts!
         
         per_device_train_batch_size=8,     

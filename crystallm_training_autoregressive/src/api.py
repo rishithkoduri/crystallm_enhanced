@@ -39,32 +39,29 @@ class GenerationRequest(BaseModel):
     formula: str
     targetEnergy: str = ""
     spaceGroup: str = ""
+    z: str = "" # NEW Z PARAMETER
     simulations: int = 10
 
 @app.post("/predict")
 def generate_crystal(req: GenerationRequest):
     try:
-        # ✨ MASTER CONDITION: All three are provided
-        if req.formula and req.targetEnergy and req.spaceGroup:
-            context = f"- The material {req.formula} is a stable crystal structure.\n- The formation energy is {float(req.targetEnergy):.4f} eV/atom.\n- The space group symmetry is {req.spaceGroup}."
-            task = f"Based on the context above, generate a valid CIF structure for {req.formula}."
-            
-        elif req.formula and req.targetEnergy:
-            context = f"- The material {req.formula} is a stable crystal structure.\n- The formation energy is {float(req.targetEnergy):.4f} eV/atom."
-            task = f"Based on the context above, generate a valid CIF structure for:\n{req.formula}"
-            
-        elif req.formula and req.spaceGroup:
-            context = f"- The target space group symmetry is {req.spaceGroup}.\n- The material composition is {req.formula}."
-            task = f"Generate a valid CIF structure for {req.formula} with {req.spaceGroup} symmetry."
-            
-        elif req.formula:
-            context = f"- The material {req.formula} is a stable crystal structure."
-            task = f"Based on the context above, generate a valid CIF structure for:\n{req.formula}"
-            
-        elif req.targetEnergy:
-            context = f"- The target formation energy is {float(req.targetEnergy):.4f} eV/atom."
-            task = "Generate a valid CIF structure that matches this target energy."
-            
+        # Dynamic Prompt Construction
+        context_lines = []
+        
+        if req.formula:
+            context_lines.append(f"- The material {req.formula} is a stable crystal structure.")
+        if req.targetEnergy:
+            context_lines.append(f"- The formation energy is {float(req.targetEnergy):.4f} eV/atom.")
+        if req.spaceGroup:
+            context_lines.append(f"- The space group symmetry is {req.spaceGroup}.")
+        if req.z:
+            context_lines.append(f"- The number of formula units per cell (Z) is {req.z}.")
+
+        # Assemble the final context and task based on provided variables
+        if context_lines:
+            context = "\n".join(context_lines)
+            formula_text = f" for {req.formula}" if req.formula else ""
+            task = f"Based on the context above, generate a valid CIF structure{formula_text}."
         else:
             context = "- No specific conditions provided."
             task = "Invent a completely novel, stable crystal structure."

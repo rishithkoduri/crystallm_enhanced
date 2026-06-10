@@ -140,10 +140,13 @@ import { Zap, RotateCcw, ArrowRight } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ formula: '', targetEnergy: '', spaceGroup: '' });
+  // Added 'z' to state initialization
+  const [formData, setFormData] = useState({ formula: '', targetEnergy: '', spaceGroup: '', z: '' });
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-  const handleClear = () => setFormData({ formula: '', targetEnergy: '', spaceGroup: '' });
+  // Added 'z' to clear handler
+  const handleClear = () => setFormData({ formula: '', targetEnergy: '', spaceGroup: '', z: '' });
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     navigate('/result', { state: { isNewGeneration: true, formData } });
@@ -179,7 +182,8 @@ export default function Home() {
             <input type="text" name="formula" value={formData.formula} onChange={handleChange} placeholder="e.g., Au2O3" className={inputClass} autoComplete="off" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          {/* Changed grid to 3 columns to fit Z */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
               <label className={labelClass}>
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 inline-block"></span>
@@ -194,6 +198,15 @@ export default function Home() {
                 Space Group Symmetry
               </label>
               <input type="text" name="spaceGroup" value={formData.spaceGroup} onChange={handleChange} placeholder="e.g., Fm-3m" className={inputClass} autoComplete="off" />
+            </div>
+
+            {/* New Z Input */}
+            <div>
+              <label className={labelClass}>
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 inline-block"></span>
+                Formula Units <span className="lowercase font-mono tracking-normal ml-1">(Z)</span>
+              </label>
+              <input type="text" name="z" value={formData.z} onChange={handleChange} placeholder="e.g., 4" className={inputClass} autoComplete="off" />
             </div>
           </div>
 
