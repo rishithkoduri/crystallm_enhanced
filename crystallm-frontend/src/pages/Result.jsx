@@ -821,18 +821,31 @@ export default function Result() {
         const response = await fetch(`http://localhost:5000/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ formula: formData.formula, targetEnergy: formData.targetEnergy, spaceGroup: formData.spaceGroup })
+            // 🚨 FIX: Actually sending the Z parameter to Node.js!
+            body: JSON.stringify({ 
+                formula: formData.formula, 
+                targetEnergy: formData.targetEnergy, 
+                spaceGroup: formData.spaceGroup,
+                z: formData.z
+            })
         });
+        
         const data = await response.json();
+        
         if (response.ok && data.status === 'success') {
             const cleaned = formatCIF(data.cifData);
             setCifData(cleaned);
             setExactPrompt(getExactPrompt(formData.formula, formData.targetEnergy, formData.spaceGroup));
             extractFeatures(cleaned);
         } else {
+            // Displays the specific Python error in the Red Box
             setError(data.message || data.detail || "Generation failed due to physical instability.");
         }
-    } catch (err) { setError("Network error. Could not connect to the Node.js server."); } finally { setIsGenerating(false); }
+    } catch (err) { 
+        setError(err.message || "Network error. Could not connect to the Node.js server."); 
+    } finally { 
+        setIsGenerating(false); 
+    }
   };
 
   if (!cifData && !isGenerating) {

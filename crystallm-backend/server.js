@@ -155,14 +155,12 @@ app.delete('/api/auth/delete-account', protect, async (req, res) => {
 
 app.post('/api/generate', protect, async (req, res) => {
     try {
-        // Updated to extract z
         const { formula, targetEnergy, spaceGroup, z } = req.body;
         
-        console.log(`➡️ Requesting RTX 4060 GPU generation for: ${formula}`);
+        console.log(`➡️ Requesting RTX 4060 GPU generation for: ${formula} with Z=${z}`);
 
         const PYTHON_API_URL = "http://127.0.0.1:8000";
 
-        // Call Python Engine with new Z param
         const pythonResponse = await fetch(`${PYTHON_API_URL}/predict`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -170,11 +168,15 @@ app.post('/api/generate', protect, async (req, res) => {
                 formula: formula || "", 
                 targetEnergy: targetEnergy || "", 
                 spaceGroup: spaceGroup || "",
-                z: z || "" // Send Z
+                z: z || "" 
             })
         });
 
-        if (!pythonResponse.ok) throw new Error(`Python API failed with status: ${pythonResponse.status}`);
+        // 🚨 CRITICAL FIX: Extract the exact error message from Python if it fails
+        if (!pythonResponse.ok) {
+            const errData = await pythonResponse.json();
+            throw new Error(errData.detail || `Python API failed with status: ${pythonResponse.status}`);
+        }
         
         const modelData = await pythonResponse.json(); 
         
@@ -188,7 +190,7 @@ app.post('/api/generate', protect, async (req, res) => {
             formula, 
             targetEnergy: finalEnergy,
             spaceGroup, 
-            z, // Save Z
+            z, 
             cifData: cifData
         });
         await newGeneration.save();
@@ -199,7 +201,8 @@ app.post('/api/generate', protect, async (req, res) => {
 
     } catch (error) {
         console.error("❌ Pipeline error:", error.message);
-        res.status(500).json({ status: "error", message: "Failed to process generation on RTX 4060.", detail: error.message });
+        // 🚨 Passes the exact Python error message to the React frontend
+        res.status(500).json({ status: "error", message: error.message });
     }
 });
 
