@@ -7,6 +7,7 @@ import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from pymatgen.core import Composition  
 
 # --- THE WINDOWS BYPASS HACK ---
 original_remove = os.remove
@@ -73,7 +74,6 @@ def generate_crystal(req: GenerationRequest):
         final_energy = None
         last_generated_z = None
         
-        # 🚨 ADDED: Pass the formula down for beautiful terminal printing!
         display_name = req.formula if req.formula else "Novel Material"
         
         for attempt in range(max_retries):
@@ -82,18 +82,42 @@ def generate_crystal(req: GenerationRequest):
             
             if not cif: continue
             
+            # --- CHEMISTRY HARD CONSTRAINT ---
+            if req.formula:
+                try:
+                    req_elements = set([str(e) for e in Composition(req.formula).elements])
+                    data_match = re.search(r'data_([A-Za-z0-9]+)', cif)
+                    
+                    if data_match:
+                        gen_form = data_match.group(1)
+                        gen_elements = set([str(e) for e in Composition(gen_form).elements])
+                        
+                        if req_elements != gen_elements:
+                            print(f"⚠️ Failed constraint: Engine hallucinated chemistry '{gen_form}' instead of '{req.formula}'. Retrying...")
+                            continue
+                except Exception:
+                    pass 
+            # -----------------------------------------
+
             if req.z:
                 z_match = re.search(r'_cell_formula_units_Z\s+(\d+)', cif)
                 if z_match:
                     generated_z = z_match.group(1)
                     last_generated_z = generated_z
-                    if generated_z == str(req.z):
-                        print(f"✅ Success! Physics stabilized at target Z={req.z}")
+                    
+                    # 🚨 NEW LOGIC: Accept if Generated Z is <= Requested Z
+                    try:
+                        is_valid_z = int(generated_z) <= int(req.z)
+                    except ValueError:
+                        is_valid_z = (generated_z == str(req.z))
+                        
+                    if is_valid_z:
+                        print(f"✅ Success! Physics stabilized at Z={generated_z} (<= requested max of {req.z})")
                         final_cif = cif
                         final_energy = energy
                         break
                     else:
-                        print(f"⚠️ Failed constraint: Engine generated Z={generated_z}. Retrying...")
+                        print(f"⚠️ Failed constraint: Engine generated Z={generated_z} (Max allowed: {req.z}). Retrying...")
                         continue
             else:
                 final_cif = cif
@@ -102,9 +126,10 @@ def generate_crystal(req: GenerationRequest):
                 
         if not final_cif:
             if req.z and last_generated_z:
-                 raise HTTPException(status_code=400, detail=f"Target Z={req.z} failed. The physics engine repeatedly stabilized at Z={last_generated_z} instead. Try a different composition.")
+                 # 🚨 Updated frontend error string
+                 raise HTTPException(status_code=400, detail=f"Target Z<={req.z} failed. The physics engine repeatedly stabilized at Z={last_generated_z} instead. Try a different composition.")
             else:
-                 raise HTTPException(status_code=500, detail="MCTS failed to find a physically stable topology. Try increasing simulations.")
+                 raise HTTPException(status_code=500, detail="MCTS failed to find a physically stable topology within the requested parameters. Try increasing simulations.")
 
         return {
             "status": "success",
