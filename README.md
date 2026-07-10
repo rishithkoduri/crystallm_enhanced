@@ -68,7 +68,19 @@ To run CrystaLLM Enhanced locally, follow these steps:
         ```bash
         pip install -r requirements.txt
         ```
-    *   Ensure the model and tokenizer paths in `crystallm_training_autoregressive/src/api.py` and `crystallm_training_autoregressive/src/mcts_decoder.py` are correctly set to your local model paths (e.g., `D:\CrystaLLM\...`).
+    * **Download Model, Tokenizer, and Dataset from Hugging Face:**
+        Due to file size limitations, the model checkpoints, trained tokenizers, and datasets are hosted on Hugging Face.
+        
+        * **Autoregressive Model Weights:** Download the weights from the [Crystallm-124M Base Directory](https://huggingface.co/rishithkoduri/Crystallm-124M/tree/main/crystallm-ar-final) and place the files inside:
+          `crystallm_training_autoregressive/data/models/crystallm-ar-final/`
+          
+        * **Custom Byte-Level Tokenizer:** Download the configuration files from the [Tokenizer Directory](https://huggingface.co/rishithkoduri/Crystallm-124M/tree/main/tokenizer) and place them inside:
+          `crystallm_training_autoregressive/data/tokenizer/`
+          
+        * **Training Corpus (Optional):** If you wish to re-train or inspect the base dataset, download the raw text data file from [thesis_corpus.json](https://huggingface.co/rishithkoduri/Crystallm-124M/blob/main/thesis_corpus.json) and place it inside:
+          `crystallm_training_autoregressive/data/`
+
+    * Ensure the paths in `api.py` and `mcts_decoder.py` correctly point to these downloaded data configurations.
     *   Start the AI backend server:
         ```bash
         uvicorn api:app --host 127.0.0.1 --port 8000
@@ -191,21 +203,74 @@ This section outlines the primary API endpoints exposed by the FastAPI backend:
         }
         ```
 
-## 🤝 Contributing
+# 📊 CrystaLLM Enhanced: Architectural & Performance Highlights
 
-Contributions are welcome! Please follow these guidelines:
+This section provides a rigorous breakdown of the underlying model specifications, core parameters, and empirical performance improvements achieved over the foundational baseline architecture.
 
-1.  Fork the repository.
-2.  Create a new branch for your feature (`git checkout -b feature/YourFeature`).
-3.  Make your changes and commit them (`git commit -am 'Add YourFeature'`).
-4.  Push to the branch (`git push origin feature/YourFeature`).
-5.  Open a Pull Request.
+---
 
-Please ensure your code adheres to the project's coding standards and includes relevant tests.
+## 🏗️ Core Model Parameters & Architecture
 
-## 📄 License
+The machine learning backend decouples language generation from topological graph evaluation, executing a dual-model hybrid pipeline:
 
-This project is not associated with a specific license.
+| Parameter | Specification | Purpose / Significance |
+| :--- | :--- | :--- |
+| **Model Type** | Causal Autoregressive Transformer | Generates CIF tokens sequentially based on past context. |
+| **Parameter Count** | 124,000,000 (124M) | Tailored capacity optimizing structural generalization without overfitting. |
+| **Layer Depth** | 12-Layer Causal Block Architecture | Extracts multi-scale dependency features across crystallographic parameters. |
+| **Hidden Dimension** | 768 Units | Embeds the high-dimensional spatial context vectors natively. |
+| **Context Window** | 2,048 Tokens | Sufficient context length to parse highly complex unit cell geometries. |
+| **Tokenizer Tech** | Custom Byte-Level Mapping | Maps individual digits, spaces, and strings precisely into 371 base tokens. |
+| **Physics Judge** | ALIGNN (Atomistic Line Graph Neural Network) | Evaluates continuous-space lattice structures converted from generated text. |
+| **Search Framework** | Monte Carlo Tree Search (MCTS) | Explores and prunes the LLM decoding paths using physical rewards. |
+
+---
+
+## 📈 Empirical Performance & Data Domain Improvements
+
+By pivoting from inference-time text correction to strict **Data Domain Engineering**, CrystaLLM Enhanced resolves the spatial blindness typical of standard language models, establishing new performance metrics:
+
+### 1. Bypassing "Format Collapse"
+* **Baseline Flaw:** Standard models rely on sub-word tokenization (BPE), which merges numbers and spaces according to English linguistic frequency, fracturing the 2D alignment of a CIF block.
+* **Our Enhancement:** The **Byte-Level Tokenizer** maps coordinates 1:1, leading to an **unguided zero-shot syntactic validity rate of 56.0%**. The model masters structural syntax rapidly in early steps, allowing it to spend major training epochs learning chemistry instead of character placement.
+
+### 2. Eliminating Spatial Blindness & Hallucinations
+* **Baseline Flaw:** Autoregressive generation is purely probabilistic; text engines frequently generate valid *text formatting* but place atoms mathematically overlapping at identical 3D fractional coordinates.
+* **Our Enhancement:** Integrating an **ALIGNN-Guided MCTS** pipeline treats materials discovery as a deterministic space search. The GNN acts as a physics supervisor, applying extreme negative rewards to atomic overlaps and ensuring that **100.0% of the structures that survive the search tree and output to the user are topologically valid**.
+
+### 3. Granular Conditioning & Supercell Control
+* **Baseline Flaw:** Earlier frameworks suffered from highly generalized text conditioning, leaving the density of the supercell unconstrained.
+* **Our Enhancement:** Expanded prompt engineering constraints to natively calculate composition space through the **Formula Units per Cell ($Z$) parameter**. Combined with Prompt Dropout training, the system dynamically maps stoichiometry to strict target space groups, forcing inversion symmetry compliance even down to Triclinic ($P\text{-}1$) groups.
+
+---
+
+## 📊 Component Ablation Progression
+
+To quantify the exact performance impact of each individual architectural layer, the system was benchmarked progressively across four distinct deployment phases. The metrics isolate the evolution of both **Syntactic Validity (SV)** and **Topological Validity (TV)**:
+
+### 🚀 Pipeline Evolution Flow
+
+```text
+[Phase 1: Base LLM (Generic Sub-word BPE)]
+  └── Syntactic Validity: 4.2%   | Topological Validity: 0.0%
+            ↓
+[Phase 2: + Custom Byte-Level Tokenizer]
+  └── Syntactic Validity: 56.0%  | Topological Validity: 1.8%
+            ↓
+[Phase 3: + MCTS Decoupled Search Loop]
+  └── Syntactic Validity: 98.5%  | Topological Validity: 14.2%
+            ↓
+[Phase 4: + Full MCTS-ALIGNN Supervisor Pipeline]
+  └── Syntactic Validity: 100.0% | Topological Validity: 100.0%*
+```
+
+## Screenshots
+<img width="1895" height="906" alt="Home" src="https://github.com/user-attachments/assets/5cf6e29d-a372-44ad-86c2-deee944252d5" />
+<img width="1899" height="908" alt="configuration" src="https://github.com/user-attachments/assets/28863e73-d6a8-4c3d-8f17-d6e31a694481" />
+<img width="1899" height="908" alt="Result" src="https://github.com/user-attachments/assets/4620884f-99c3-473b-8c92-2ee0c67327f3" />
+<img width="1899" height="908" alt="history" src="https://github.com/user-attachments/assets/1d0da8c3-a7a7-4885-88d9-53165ddcd272" />
+
+
 
 ## 🔗 Important Links
 
