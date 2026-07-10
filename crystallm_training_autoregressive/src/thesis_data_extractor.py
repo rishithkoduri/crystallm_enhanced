@@ -28,7 +28,6 @@ def fetch_ar_corpus(api_key, num_materials=40000, save_path="data/thesis_corpus.
                     energy = f"{doc.formation_energy_per_atom:.4f}"
                     space_group = doc.symmetry.symbol
 
-                    # 🚨 THE FIX: Randomly select a prompt style so the AI learns to be dynamic
                     prompt_style = random.choice(["full", "formula_only", "energy_only", "unconditioned", "space_group"])
 
                     if prompt_style == "full":

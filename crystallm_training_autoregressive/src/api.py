@@ -104,8 +104,6 @@ def generate_crystal(req: GenerationRequest):
                 if z_match:
                     generated_z = z_match.group(1)
                     last_generated_z = generated_z
-                    
-                    # 🚨 NEW LOGIC: Accept if Generated Z is <= Requested Z
                     try:
                         is_valid_z = int(generated_z) <= int(req.z)
                     except ValueError:
@@ -126,7 +124,6 @@ def generate_crystal(req: GenerationRequest):
                 
         if not final_cif:
             if req.z and last_generated_z:
-                 # 🚨 Updated frontend error string
                  raise HTTPException(status_code=400, detail=f"Target Z<={req.z} failed. The physics engine repeatedly stabilized at Z={last_generated_z} instead. Try a different composition.")
             else:
                  raise HTTPException(status_code=500, detail="MCTS failed to find a physically stable topology within the requested parameters. Try increasing simulations.")

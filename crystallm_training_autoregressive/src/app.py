@@ -5,7 +5,7 @@ import html
 import os
 from transformers import AutoModelForCausalLM, PreTrainedTokenizerFast
 
-# Load locally (Your RTX 4060 will crush a 124M parameter model)
+# Load locally 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("Loading Autoregressive Tokenizer and Model...")

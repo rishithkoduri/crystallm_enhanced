@@ -74,7 +74,6 @@ class CrystaLLMMCTS:
             error_details = str(e).split('\n')[0] 
             return -100.0, f"{error_type}: {error_details}"
 
-    # 🚨 ADDED: material_name argument here!
     def generate_guided(self, prompt, num_simulations=10, batch_size=10, material_name="Unknown"):
         print(f"\n--- 🌳 INITIATING PARALLEL ALIGNN MCTS FOR {material_name.upper()} ({num_simulations} Sims) ---")
         
